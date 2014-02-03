@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Open and modify Microsoft Word 2007 docx files (called 'OpenXML' and
@@ -104,7 +104,7 @@ def makeelement(tagname, tagtext=None, nsprefix='w', attributes=None,
         # FIXME: rest of code below expects a single prefix
         nsprefix = nsprefix[0]
     if nsprefix:
-        namespace = '{'+nsprefixes[nsprefix]+'}'
+        namespace = '{' + nsprefixes[nsprefix] + '}'
     else:
         # For when namespace = None
         namespace = ''
@@ -369,8 +369,7 @@ def table(contents, heading=True, colw=None, cwunit='dxa', tblw=0,
     rowprops.append(cnfStyle)
     row.append(rowprops)
     if heading:
-        i = 0
-        for heading in contents[0]:
+        for i, heading in enumerate(contents[0]):
             cell = makeelement('tc')
             # Cell properties
             cellprops = makeelement('tcPr')
@@ -396,13 +395,11 @@ def table(contents, heading=True, colw=None, cwunit='dxa', tblw=0,
                 else:
                     cell.append(paragraph(h, jc='center'))
             row.append(cell)
-            i += 1
         table.append(row)
     # Contents Rows
     for contentrow in contents[1 if heading else 0:]:
         row = makeelement('tr')
-        i = 0
-        for content in contentrow:
+        for i, content in enumerate(contentrow):
             cell = makeelement('tc')
             # Properties
             cellprops = makeelement('tcPr')
@@ -426,7 +423,6 @@ def table(contents, heading=True, colw=None, cwunit='dxa', tblw=0,
                         align = 'left'
                     cell.append(paragraph(c, jc=align))
             row.append(cell)
-            i += 1
         table.append(row)
     return table
 
@@ -615,14 +611,13 @@ def picture(
 
 def search(document, search):
     '''Search a document for a regex, return success / fail result'''
-    result = False
     searchre = re.compile(search)
     for element in document.iter():
         if element.tag == '{%s}t' % nsprefixes['w']:  # t (text) elements
             if element.text:
                 if searchre.search(element.text):
-                    result = True
-    return result
+                    return True
+    return False
 
 
 def replace(document, search, replace):
@@ -675,9 +670,6 @@ def findTypeParent(element, tag):
         if p.tag == tag:
             return p
 
-    # Not found
-    return None
-
 
 def AdvSearch(document, search, bs=3):
     '''Return set of all regex matches
@@ -714,7 +706,7 @@ def AdvSearch(document, search, bs=3):
     # Compile the search regexp
     searchre = re.compile(search)
 
-    matches = []
+    matches = set()
 
     # Will match against searchels. Searchels is a list that contains last
     # n text elements found in the document. 1 < n < bs
@@ -739,10 +731,8 @@ def AdvSearch(document, search, bs=3):
                     if found:
                         break
                     for s in range(len(searchels)):
-                        if found:
-                            break
-                        if s+l <= len(searchels):
-                            e = range(s, s+l)
+                        if s + l <= len(searchels):
+                            e = range(s, s + l)
                             txtsearch = ''
                             for k in e:
                                 txtsearch += searchels[k].text
@@ -750,9 +740,10 @@ def AdvSearch(document, search, bs=3):
                             # Searcs for the text in the whole txtsearch
                             match = searchre.search(txtsearch)
                             if match:
-                                matches.append(match.group())
+                                matches.add(match.group())
                                 found = True
-    return set(matches)
+                                break
+    return matches
 
 
 def advReplace(document, search, replace, bs=3):
@@ -831,7 +822,7 @@ def advReplace(document, search, replace, bs=3):
                             break
                         if s+l <= len(searchels):
                             e = range(s, s+l)
-                            #print "elems:", e
+                            #print 'elems:', e
                             txtsearch = ''
                             for k in e:
                                 txtsearch += searchels[k].text
@@ -843,24 +834,24 @@ def advReplace(document, search, replace, bs=3):
 
                                 # I've found something :)
                                 if DEBUG:
-                                    log.debug("Found element!")
-                                    log.debug("Search regexp: %s",
+                                    log.debug('Found element!')
+                                    log.debug('Search regexp: %s',
                                               searchre.pattern)
-                                    log.debug("Requested replacement: %s",
+                                    log.debug('Requested replacement: %s',
                                               replace)
-                                    log.debug("Matched text: %s", txtsearch)
-                                    log.debug("Matched text (splitted): %s",
+                                    log.debug('Matched text: %s', txtsearch)
+                                    log.debug('Matched text (splitted): %s',
                                               map(lambda i: i.text, searchels))
-                                    log.debug("Matched at position: %s",
+                                    log.debug('Matched at position: %s',
                                               match.start())
-                                    log.debug("matched in elements: %s", e)
+                                    log.debug('matched in elements: %s', e)
                                     if isinstance(replace, etree._Element):
-                                        log.debug("Will replace with XML CODE")
+                                        log.debug('Will replace with XML CODE')
                                     elif isinstance(replace(list, tuple)):
-                                        log.debug("Will replace with LIST OF"
-                                                  " ELEMENTS")
+                                        log.debug('Will replace with LIST OF'
+                                                  ' ELEMENTS')
                                     else:
-                                        log.debug("Will replace with:",
+                                        log.debug('Will replace with:',
                                                   re.sub(search, replace,
                                                          txtsearch))
 
@@ -899,7 +890,7 @@ def advReplace(document, search, replace, bs=3):
                                                 search, replace, txtsearch)
                                         replaced = True
                                         log.debug(
-                                            "Replacing in element #: %s", i)
+                                            'Replacing in element #: %s', i)
                                     else:
                                         # Clears the other text elements
                                         searchels[i].text = ''
@@ -928,8 +919,9 @@ def getdocumenttext(document):
                     paratext = paratext+element.text
             elif element.tag == '{'+nsprefixes['w']+'}tab':
                 paratext = paratext + '\t'
-        # Add our completed paragraph text to the list of paragraph text
-        if not len(paratext) == 0:
+        # Add our completed paragraph text, if any, to the list of
+        # paragraph text.
+        if paratext:
             paratextlist.append(paratext)
     return paratextlist
 
@@ -1035,16 +1027,14 @@ def wordrelationships(relationshiplist):
     relationships = etree.fromstring(
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006'
         '/relationships"></Relationships>')
-    count = 0
-    for relationship in relationshiplist:
+    for count, relationship in enumerate(relationshiplist, start=1):
         # Relationship IDs (rId) start at 1.
         rel_elm = makeelement('Relationship', nsprefix=None,
-                              attributes={'Id':     'rId'+str(count+1),
+                              attributes={'Id':     'rId%s' % count,
                                           'Type':   relationship[0],
                                           'Target': relationship[1]}
                               )
         relationships.append(rel_elm)
-        count += 1
     return relationships
 
 
@@ -1091,14 +1081,12 @@ def savedocx(
     files_to_ignore = ['.DS_Store']  # nuisance from some os's
     for dirpath, dirnames, filenames in os.walk('.'):
         for filename in filenames:
-            if filename in files_to_ignore:
-                continue
-            templatefile = join(dirpath, filename)
-            archivename = templatefile[2:]
-            log.info('Saving: %s', archivename)
-            docxfile.write(templatefile, archivename)
+            if filename not in files_to_ignore:
+                templatefile = join(dirpath, filename)
+                archivename = templatefile[2:]
+                log.info('Saving: %s', archivename)
+                docxfile.write(templatefile, archivename)
 
     log.info('Saved new file to: %r', output)
     docxfile.close()
     os.chdir(prev_dir)  # restore previous working dir
-    return

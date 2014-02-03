@@ -59,13 +59,16 @@ Making and Modifying Documents
 ------------------------------
 
 - Just `download python docx <http://github.com/mikemaccana/python-docx/tarball/master>`_.
-- Use **pip** or **easy_install** to fetch the **lxml** and **PIL** modules.
+- You will need the **lxml**, **nose**, and **PIL** modules. - You can
+  either install them using **easy_install** or **pip** (via `pip install -r
+  requirements.txt`).
 - Then run::
 
     example-makedocument.py
 
 
-Congratulations, you just made and then modified a Word document!
+Congratulations, you just made and then modified a Word document! The new document
+will be written to "Welcome to the Python docx module.docx" in the current directory.
 
 
 Extracting Text from a Document
@@ -88,7 +91,7 @@ Ideas & To Do List
 We love forks, changes and pull requests!
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Check out the [HACKING](HACKING.markdown) to add your own changes!
+- Check out `HACKING <HACKING.markdown>`_ to add your own changes!
 - For this project on github
 - Send a pull request via github and we'll add your changes!
 
